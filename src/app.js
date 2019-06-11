@@ -6,6 +6,8 @@ import path from 'path'
 
 import logger from './utils/logger'
 import configs from './configs'
+import Museum from './models/museum'
+import museumsData from './data/museums.json'
 
 const app = express()
 
@@ -24,10 +26,21 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 app.use('/', require('./routes').default)
 
+async function intialDatabase() {
+  const museums = await Museum.find()
+  if (museums.length > 0) return
+
+  for (let i = 0; i < museumsData.length; i++) {
+    const museum = new Museum(museumsData[i])
+    await museum.save()
+  }
+}
+
 mongoose.connect(configs.MONGO_URL)
 const db = mongoose.connection
 db.on('open', () => {
   logger.info('DB connected')
+  intialDatabase()
 })
 
 db.on('error', (err) => logger.error(err))
